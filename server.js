@@ -1,3 +1,7 @@
+console.log("Trakt ID:", process.env.TRAKT_CLIENT_ID);
+console.log("Username:", process.env.TRAKT_USERNAME);
+console.log("TMDB Key:", process.env.TMDB_API_KEY);
+
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
@@ -24,6 +28,12 @@ app.get('/api/recent', async (req, res) => {
         'trakt-api-key': TRAKT_CLIENT_ID
       }
     });
+
+    console.log("Trakt response status:", traktRes.status);
+const traktText = await traktRes.text();
+console.log("Trakt response body:", traktText);
+return res.status(traktRes.status).send(traktText);
+
 
     const traktData = await traktRes.json();
 
