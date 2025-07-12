@@ -1,10 +1,5 @@
-console.log("Trakt ID:", process.env.TRAKT_CLIENT_ID);
-console.log("Username:", process.env.TRAKT_USERNAME);
-console.log("TMDB Key:", process.env.TMDB_API_KEY);
-
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
 require('dotenv').config();
 
 const app = express();
