@@ -36,11 +36,12 @@ app.get('/api/recent', async (req, res) => {
       traktData.map(async ({ movie }) => {
         const { title, year, ids } = movie;
         let poster = '';
+        let rating = null;
 
+        // Get TMDb poster
         try {
           const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${ids.tmdb}?api_key=${TMDB_API_KEY}`);
           const tmdbData = await tmdbRes.json();
-
           if (tmdbData.poster_path) {
             poster = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${tmdbData.poster_path}`;
           }
@@ -48,7 +49,24 @@ app.get('/api/recent', async (req, res) => {
           console.warn(`⚠️ TMDb fetch failed for "${title}":`, err.message);
         }
 
-        return { title, year, poster };
+        // Get Trakt rating
+        try {
+          const ratingRes = await fetch(`https://api.trakt.tv/users/${TRAKT_USERNAME}/ratings/movies/${ids.slug}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'trakt-api-version': '2',
+              'trakt-api-key': TRAKT_CLIENT_ID
+            }
+          });
+          const ratingData = await ratingRes.json();
+          if (Array.isArray(ratingData) && ratingData.length > 0) {
+            rating = ratingData[0].rating;
+          }
+        } catch (err) {
+          console.warn(`⚠️ Rating fetch failed for "${title}":`, err.message);
+        }
+
+        return { title, year, poster, rating };
       })
     );
 
