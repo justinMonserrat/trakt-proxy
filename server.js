@@ -16,7 +16,7 @@ app.use(cors());
 // GET /api/recent - Fetch recently watched movies
 app.get('/api/recent', async (req, res) => {
   try {
-    // Fetch history from Trakt
+    console.log('📡 Fetching from Trakt...');
     const traktRes = await fetch(`https://api.trakt.tv/users/${TRAKT_USERNAME}/history/movies?limit=4`, {
       headers: {
         'Content-Type': 'application/json',
@@ -28,11 +28,13 @@ app.get('/api/recent', async (req, res) => {
     const traktData = await traktRes.json();
 
     if (!traktRes.ok) {
-      console.error('❌ Trakt API Error:', traktData);
+      console.error('❌ Trakt API error:', traktData);
       return res.status(traktRes.status).json({ error: traktData });
     }
 
-    // Enrich with poster data from TMDb
+    console.log('✅ Trakt data received:', traktData);
+
+    // Enrich each movie with TMDb poster
     const enrichedMovies = await Promise.all(
       traktData.map(async ({ movie }) => {
         const { title, year, ids } = movie;
@@ -41,20 +43,26 @@ app.get('/api/recent', async (req, res) => {
         try {
           const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${ids.tmdb}?api_key=${TMDB_API_KEY}`);
           const tmdbData = await tmdbRes.json();
+
+          if (!tmdbRes.ok) {
+            console.warn(`⚠️ TMDb error for "${title}":`, tmdbData);
+          }
+
           if (tmdbData.poster_path) {
             poster = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${tmdbData.poster_path}`;
           }
         } catch (err) {
-          console.warn(`⚠️ Failed to fetch poster for "${title}"`);
+          console.warn(`⚠️ Failed TMDb fetch for "${title}"`, err.message);
         }
 
         return { title, year, poster };
       })
     );
 
+    console.log('🎬 Final movie list:', enrichedMovies);
     res.json(enrichedMovies);
   } catch (error) {
-    console.error('❌ Server Error:', error);
+    console.error('🔥 Server error:', error.message);
     res.status(500).json({ error: 'Failed to fetch Trakt data' });
   }
 });
