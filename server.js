@@ -1,21 +1,23 @@
 const express = require('express');
 const cors = require('cors');
+const fetch = require('node-fetch'); // Required for server-side fetch
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Env variables
+// Environment variables
 const TRAKT_USERNAME = process.env.TRAKT_USERNAME;
 const TRAKT_CLIENT_ID = process.env.TRAKT_CLIENT_ID;
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 app.use(cors());
 
-// GET /api/recent - Fetch recently watched movies
+// Route: GET /api/recent
 app.get('/api/recent', async (req, res) => {
   try {
     console.log('📡 Fetching from Trakt...');
+
     const traktRes = await fetch(`https://api.trakt.tv/users/${TRAKT_USERNAME}/history/movies?limit=4`, {
       headers: {
         'Content-Type': 'application/json',
@@ -24,22 +26,17 @@ app.get('/api/recent', async (req, res) => {
       }
     });
 
-    console.log("Trakt response status:", traktRes.status);
-const traktText = await traktRes.text();
-console.log("Trakt response body:", traktText);
-return res.status(traktRes.status).send(traktText);
-
-
-    const traktData = await traktRes.json();
+    const traktText = await traktRes.text();
 
     if (!traktRes.ok) {
-      console.error('❌ Trakt API error:', traktData);
-      return res.status(traktRes.status).json({ error: traktData });
+      console.error('❌ Trakt API error:', traktText);
+      return res.status(traktRes.status).json({ error: 'Trakt API error', details: traktText });
     }
 
-    console.log('✅ Trakt data received:', traktData);
+    const traktData = JSON.parse(traktText);
+    console.log('✅ Trakt data received');
 
-    // Enrich each movie with TMDb poster
+    // Enrich with TMDb posters
     const enrichedMovies = await Promise.all(
       traktData.map(async ({ movie }) => {
         const { title, year, ids } = movie;
@@ -57,7 +54,7 @@ return res.status(traktRes.status).send(traktText);
             poster = `https://image.tmdb.org/t/p/w300_and_h450_bestv2${tmdbData.poster_path}`;
           }
         } catch (err) {
-          console.warn(`⚠️ Failed TMDb fetch for "${title}"`, err.message);
+          console.warn(`⚠️ TMDb fetch failed for "${title}":`, err.message);
         }
 
         return { title, year, poster };
