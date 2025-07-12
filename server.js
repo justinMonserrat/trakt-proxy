@@ -38,7 +38,7 @@ app.get('/api/recent', async (req, res) => {
         let poster = '';
         let rating = null;
 
-        // Get TMDb poster
+        // Get poster from TMDb
         try {
           const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${ids.tmdb}?api_key=${TMDB_API_KEY}`);
           const tmdbData = await tmdbRes.json();
@@ -49,7 +49,7 @@ app.get('/api/recent', async (req, res) => {
           console.warn(`⚠️ TMDb fetch failed for "${title}":`, err.message);
         }
 
-        // Get Trakt rating
+        // Get personal rating from Trakt
         try {
           const ratingRes = await fetch(`https://api.trakt.tv/users/${TRAKT_USERNAME}/ratings/movies/${ids.slug}`, {
             headers: {
